@@ -1,6 +1,7 @@
 const http = require('http')
 const fs = require('fs')
 const path = require('path')
+const db = require('./databse')
 
 
 const indexHtmlFile = fs.readFileSync(path.join(__dirname, 'static', 'index.html'))
@@ -23,9 +24,14 @@ server.listen(3000)
 const { Server } = require("socket.io");
 const io = new Server(server);
 
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
   console.log('a user connected. id - ' + socket.id);
+
+  let userNickname = 'admin'
+  let messages = await db.getMessages()
+
   socket.on('new_message', (message) => {
+    db.addMessage(message, 1)
     io.emit('message', message)
   });
 })
