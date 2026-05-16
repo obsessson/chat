@@ -19,10 +19,7 @@ registerForm?.addEventListener('submit', (event) => {
 
 loginForm?.addEventListener('submit', (event) => {
     event.preventDefault();
-    const {login, password, passwordRepeat} = liginForm;
-    if(password.value !== passwordRepeat.value) {
-        return alert('Паролі не співпадають')
-    }
+    const {login, password} = loginForm;
     const user = JSON.stringify({
         login: login.value,
         password: password.value
@@ -37,7 +34,7 @@ loginForm?.addEventListener('submit', (event) => {
             window.location.assign('/');
         }
         else {
-            return alert(xhr.response)
+            return alert(xhr.response);
         }
     }
 });
