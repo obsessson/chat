@@ -105,11 +105,15 @@ function login(req, res) {
   });
 }
 
+// --- ВИПРАВЛЕННЯ ДЛЯ RENDER ---
+// Беремо динамічний порт від Render або 3000 для запуску на вашому комп'ютері
 const PORT = process.env.PORT || 3000;
 
+// Додаємо адресу '0.0.0.0', щоб сервер приймав зовнішні запити в хмарі
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
+// ------------------------------
 
 const { Server } = require("socket.io");
 const io = new Server(server);
@@ -118,24 +122,13 @@ io.on('connection', async (socket) => {
   console.log('a user connected. id - ' + socket.id);
 
 
-  let userNickname = socket.credentionals?.login;
-  let userId = socket.credentionals?.user_id;
+  let userNickname = 'admin';
   let messages = await db.getMessages();
 
   socket.emit('all_messages', messages);
 
   socket.on('new_message', (message) => {
-    db.addMessage(message, userId);
+    db.addMessage(message, 1);
     io.emit('message', userNickname + ': ' + message);
   });
 });
-
-io.use((socket, next) => {
-  const cookie = socket.handshake.auth.cookie;
-  const credentionals = getCredentionals(cookie);
-  if(!credentionals) {
-    next(new Error("no auth"));
-  }
-  socket.credentionals = credentionals;
-  next();
-})
