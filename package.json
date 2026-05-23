@@ -20,8 +20,8 @@
     "dev": "nodemon server.js"
   },
   "engines": {
-    "node": "14.x"
-  },
+  "node": ">=18.0.0"  
+},
   "dependencies": {
     "better-sqlite3": "^12.10.0",
     "cookie": "^1.1.1",
