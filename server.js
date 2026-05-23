@@ -16,10 +16,24 @@ const loginFile = fs.readFileSync(path.join(__dirname, 'static', 'login.html'));
 const server = http.createServer((req, res) => {
   if(req.method === 'GET') {
     switch(req.url) {
-      case '/register': return res.end(registerFile);
-      case '/login': return res.end(loginFile);
-      case '/auth.js': return res.end(authFile);
-      case '/style.css': return res.end(styleFile);
+      // Додано заголовки для HTML-сторінок
+      case '/register': 
+        res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'});
+        return res.end(registerFile);
+      case '/login': 
+        res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'});
+        return res.end(loginFile);
+        
+      // ВИПРАВЛЕННЯ ДЛЯ CSS (Браузер тепер точно зрозуміє стилі)
+      case '/style.css': 
+        res.writeHead(200, {'Content-Type': 'text/css'});
+        return res.end(styleFile);
+        
+      // ВИПРАВЛЕННЯ ДЛЯ JS (Заголовки для скриптів)
+      case '/auth.js': 
+        res.writeHead(200, {'Content-Type': 'application/javascript'});
+        return res.end(authFile);
+        
       default: return guarded(req, res);
     }
   }
@@ -42,12 +56,16 @@ function guarded(req, res) {
   
   if(req.method === 'GET') {
     switch(req.url) {
-      case '/': return res.end(indexHtmlFile);
-      case '/script.js': return res.end(scriptFile);
+      case '/': 
+        res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'});
+        return res.end(indexHtmlFile);
+      case '/script.js': 
+        res.writeHead(200, {'Content-Type': 'application/javascript'});
+        return res.end(scriptFile);
     }
   }
 
-  res.writeHead(404);
+  res.writeHead(404, {'Content-Type': 'text/plain; charset=utf-8'});
   return res.end('Error 404');
 }
 
@@ -106,10 +124,8 @@ function login(req, res) {
 }
 
 // --- ВИПРАВЛЕННЯ ДЛЯ RENDER ---
-// Беремо динамічний порт від Render або 3000 для запуску на вашому комп'ютері
 const PORT = process.env.PORT || 3000;
 
-// Додаємо адресу '0.0.0.0', щоб сервер приймав зовнішні запити в хмарі
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
 });
@@ -121,8 +137,7 @@ const io = new Server(server);
 io.on('connection', async (socket) => {
   console.log('a user connected. id - ' + socket.id);
 
-
-  let userNickname = 'admin';
+let userNickname = 'admin';
   let messages = await db.getMessages();
 
   socket.emit('all_messages', messages);
