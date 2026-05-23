@@ -1,93 +1,63 @@
-const fs = require("fs");
-const crypto = require("crypto")
+const Database = require('better-sqlite3');
 
-// Шлях до файлу, у якому буде наша база даних
-const dbFile = "./chat.db";
-const exists = fs.existsSync(dbFile);
-const sqlite3 = require("sqlite3").verbose();
-const dbWrapper = require("sqlite");
-let db;
+const db = new Database('chat.db');
 
-dbWrapper
-  .open({
-    filename: dbFile,
-    driver: sqlite3.Database
-  })
-  .then(async dBase => {
-    db = dBase;
+db.prepare(`
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  login TEXT UNIQUE,
+  password TEXT
+)
+`).run();
 
-    // Використвуємо try-catch у разі якщо виникнуть помилки
-    try {
-      // Перевіряємо чи існує уже файл бази даних
-      if (!exists) {
-        // Якщо не існує то створюємо таблиці
-        await db.run(
-            `CREATE TABLE user(
-                user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                login TEXT,
-                password TEXT
-            );`
-        );
-
-        await db.run(
-          `INSERT INTO user (login, password) VALUES 
-          ('admin', 'admin'), 
-          ('JavaScript', 'banana'), 
-          ('user1', 'password1');`
-        );
-
-        await db.run(
-            `CREATE TABLE message(
-                msg_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                content TEXT,
-                autor INTEGER,
-                FOREIGN KEY(autor) REFERENCES user(user_id)
-            );`
-        );s
-      } else {
-        console.log(await db.all("SELECT * from user"));
-      }
-    } catch (dbError) {
-      console.error(dbError);
-    }
-  });
-
+db.prepare(`
+CREATE TABLE IF NOT EXISTS messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  text TEXT,
+  user_id INTEGER
+)
+`).run();
 
 module.exports = {
-  getMessages: async () => {
-    try {
-      return await db.all(
-        `SELECT msg_id, content, login, user_id from message
-         JOIN user ON message.autor = user.user_id`
-        );
-    } catch (dbError) {
-      console.error(dbError);
-    }
+  isUserExist(login) {
+    const user = db.prepare(
+      'SELECT * FROM users WHERE login = ?'
+    ).get(login);
+
+    return !!user;
   },
-  addMessage: async (msg, userId) => {
-    await db.run(
-      `INSERT INTO message (content, autor) VALUES (?, ?)`,
-      [msg, userId]
-    );
+
+  addUser(user) {
+    db.prepare(
+      'INSERT INTO users(login, password) VALUES (?, ?)'
+    ).run(user.login, user.password);
   },
-  isUserExist: async (login) => {
-    const candidate = await db.all(`SELECT * FROM user WHERE login = ?`, [login]);
-    return !!candidate.length;
+
+  getAuthToken(user) {
+    const foundUser = db.prepare(
+      'SELECT * FROM users WHERE login = ? AND password = ?'
+    ).get(user.login, user.password);
+
+    if(!foundUser) {
+      throw new Error('Invalid login or password');
+    }
+
+    return `${foundUser.id}.${foundUser.login}`;
   },
-  addUser: async (user) => {
-    await db.run(
-      `INSERT INTO user (login, password) VALUES (?, ?)`,
-      [user.login, user.password]
-    );
-},
-getAuthToken: async (user) => {
-    const candidate = await db.all(`SELECT * FROM user WHERE login = ?`, [user.login]);
-    if(!candidate.length) {
-      throw 'Wrong login';
-    }
-    if(candidate[0].password !== user.password) {
-      throw 'Wrong password';
-    }
-    return candidate[0].user_id + '.' + candidate[0].login + '.' + crypto.randomBytes(20).toString('hex');
+
+  addMessage(message, userId) {
+    db.prepare(
+      'INSERT INTO messages(text, user_id) VALUES (?, ?)'
+    ).run(message, userId);
+  },
+
+  getMessages() {
+    const rows = db.prepare(`
+      SELECT users.login, messages.text
+      FROM messages
+      JOIN users ON users.id = messages.user_id
+    `).all();
+
+    return rows.map(row => `${row.login}: ${row.text}`);
   }
 };

@@ -19,14 +19,14 @@
     "start": "node server",
     "dev": "nodemon server.js"
   },
-  "engines":{
+  "engines": {
     "node": "14.x"
   },
   "dependencies": {
+    "better-sqlite3": "^12.10.0",
     "cookie": "^1.1.1",
     "socket.io": "^4.8.3",
-    "sqlite": "^5.1.1",
-    "sqlite3": "^6.0.1"
+    "sqlite": "^5.1.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
